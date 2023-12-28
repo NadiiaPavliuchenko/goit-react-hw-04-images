@@ -1,4 +1,3 @@
-import { Component } from 'react';
 import Searchbar from '../Searchbar/Searchbar.jsx';
 import imageFinder from '../../api/imageFinder.js';
 import ImageGallery from '../ImageGallery/ImageGallery.jsx';
@@ -7,96 +6,75 @@ import Loader from '../Loader/Loader.jsx';
 import Button from '../Button/Button.jsx';
 import Modal from '../Modal/Modal.jsx';
 import StyledApp from './App.styled.jsx';
+import { useEffect, useState } from 'react';
 
-class App extends Component {
-  state = {
-    images: [],
-    isLoading: false,
-    query: '',
-    showModal: false,
-    page: 1,
-    loadMore: false,
-    selectedImage: null,
+const App = () => {
+  const [images, setImages] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [query, setQuery] = useState('');
+  const [showModal, setShowModal] = useState(false);
+  const [page, setPage] = useState(1);
+  const [loadMore, setLoadMore] = useState(false);
+  const [selectedImage, setSelectedImage] = useState(null);
+
+  useEffect(() => {
+    const getImages = async () => {
+      try {
+        setIsLoading(true);
+        const resp = await imageFinder(query, page);
+        const totalHits = resp.totalHits;
+        const hits = resp.hits.map(({ id, webformatURL, largeImageURL }) => ({
+          id,
+          webformatURL,
+          largeImageURL,
+        }));
+        setImages(prevState => [...prevState, ...hits]);
+        setLoadMore(page < Math.ceil(totalHits / 12));
+      } catch (err) {
+        console.log(err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    if (!query) return;
+    getImages();
+  }, [query, page]);
+
+  const handleFormSubmit = inputValue => {
+    setQuery(inputValue);
+    setPage(1);
+    setImages([]);
   };
 
-  componentDidUpdate(_, prevState) {
-    if (
-      this.state.page !== prevState.page ||
-      this.state.query !== prevState.query
-    ) {
-      this.getImages();
-    }
-  }
-
-  getImages = async () => {
-    try {
-      this.setState({ isLoading: true });
-      const resp = await imageFinder(this.state.query, this.state.page);
-      const totalHits = resp.totalHits;
-      const hits = resp.hits.map(({ id, webformatURL, largeImageURL }) => ({
-        id,
-        webformatURL,
-        largeImageURL,
-      }));
-      this.setState(prevState => ({
-        images:
-          prevState.query !== this.state.query
-            ? [...hits]
-            : [...prevState.images, ...hits],
-        loadMore: this.state.page < Math.ceil(totalHits / 12),
-      }));
-    } catch (err) {
-      console.log(err);
-    } finally {
-      this.setState({ isLoading: false });
-    }
+  const handleLoadMore = () => {
+    setPage(prevState => prevState + 1);
   };
 
-  handleFormSubmit = inputValue => {
-    const { query } = inputValue;
-    this.setState({
-      query,
-      page: 1,
-      images: [],
-    });
+  const handleModal = image => {
+    setShowModal(prevState => !prevState);
+    setSelectedImage(image);
   };
 
-  handleLoadMore = () => {
-    this.setState(prevState => ({
-      page: prevState.page + 1,
-    }));
-  };
-
-  handleModal = image => {
-    this.setState(prevState => ({
-      showModal: !prevState.showModal,
-      selectedImage: image,
-    }));
-  };
-
-  render() {
-    const { images, isLoading, showModal, selectedImage, loadMore } =
-      this.state;
-    return (
-      <StyledApp>
-        <Searchbar onSubmit={this.handleFormSubmit} />
-        <ImageGallery>
-          {isLoading && <Loader />}
-          {images &&
-            images.map(image => (
-              <ImageGalleryItem
-                imageData={image}
-                onShowModal={() => this.handleModal(image)}
-              />
-            ))}
-          {showModal && (
-            <Modal imageData={selectedImage} onHideModal={this.handleModal} />
-          )}
-          {loadMore && <Button loadMore={this.handleLoadMore} />}
-        </ImageGallery>
-      </StyledApp>
-    );
-  }
-}
+  return (
+    <StyledApp>
+      <Searchbar onSubmit={handleFormSubmit} />
+      <ImageGallery>
+        {isLoading && <Loader />}
+        {images &&
+          images.map(image => (
+            <ImageGalleryItem
+              imageData={image}
+              onShowModal={() => handleModal(image)}
+            />
+          ))}
+        {showModal && (
+          <Modal imageData={selectedImage} onHideModal={handleModal} />
+        )}
+        {loadMore && <Button loadMore={handleLoadMore} />}
+      </ImageGallery>
+    </StyledApp>
+  );
+};
 
 export default App;

@@ -1,22 +1,19 @@
-import { Component } from 'react';
 import { ImageGalleryLi, ImageGalleryLiImage } from './ImageGalleryItem.styled';
 
-class ImageGalleryItem extends Component {
-  showModal = () => {
-    this.props.onShowModal();
+const ImageGalleryItem = props => {
+  const showModal = () => {
+    props.onShowModal();
   };
-  render() {
-    const { id, webformatURL } = this.props.imageData;
-    return (
-      <ImageGalleryLi key={id}>
-        <ImageGalleryLiImage
-          src={webformatURL}
-          alt="imageStock"
-          onClick={this.showModal}
-        />
-      </ImageGalleryLi>
-    );
-  }
-}
+  const { id, webformatURL } = props.imageData;
+  return (
+    <ImageGalleryLi key={id}>
+      <ImageGalleryLiImage
+        src={webformatURL}
+        alt="imageStock"
+        onClick={showModal}
+      />
+    </ImageGalleryLi>
+  );
+};
 
 export default ImageGalleryItem;
